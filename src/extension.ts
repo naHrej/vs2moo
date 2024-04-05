@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as http from 'http';
-import path from 'path';
-import fs from 'fs';
+import * as path from 'path';
+import * as fs from 'fs';
 import * as chokidar from 'chokidar';
 
 
@@ -29,22 +29,29 @@ export function activate(context: vscode.ExtensionContext) {
 					}
 					);
 				});
+			}).on('error', (err) => {
+				console.error(`Request error: ${err.message}`);
 			});
 		}
 	});
 	context.subscriptions.push(disposable);
 
-	let watcher = chokidar.watch(vscode.workspace.workspaceFolders ? path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, '**/*.moo') : '');
+	let watcher;
+	if (vscode.workspace.workspaceFolders) {
+		watcher = chokidar.watch(path.join(vscode.workspace.workspaceFolders[0].uri.fsPath, '**/*.moo'));
+	} else {
+		watcher = chokidar.watch('');
+	}
 	// have the watcher listen for newly saved files
 	// and copy them to the outputPath with the name outgoing.moo
 	watcher.on('add', path => console.log(`File ${path} has been added`));
-watcher.on('change', path => console.log(`File ${path} has been changed`));
-watcher.on('unlink', path => console.log(`File ${path} has been removed`));
-watcher.on('error', error => console.log(`Watcher error: ${error}`));
+	watcher.on('change', path => console.log(`File ${path} has been changed`));
+	watcher.on('unlink', path => console.log(`File ${path} has been removed`));
+	watcher.on('error', error => console.log(`Watcher error: ${error}`));
 	watcher.on('change', (file) => {
 		if (file.endsWith('.moo')) {
 			let config = vscode.workspace.getConfiguration('vs2moo');
-			
+
 			let outputPath = path.resolve(config.get('outputPath') as string);
 			let fileName = file.split('/').pop();
 			let fileUri = vscode.Uri.file(path.join(outputPath, 'outgoing.moo'));
@@ -61,10 +68,10 @@ watcher.on('error', error => console.log(`Watcher error: ${error}`));
 	});
 
 
-	
+
 }
 
-export function deactivate() { 
+export function deactivate() {
 
-	
+
 }
