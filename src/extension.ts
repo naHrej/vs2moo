@@ -14,11 +14,15 @@ export function activate(context: vscode.ExtensionContext) {
 			let Folder = vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders[0].uri.fsPath : '';
 			let config = vscode.workspace.getConfiguration('vs2moo');
 			let apiEndpoint = config.get('APIEndpoint');
-			http.get(`${apiEndpoint}${id}:${verbName}`, (res) => {
+
+			const url = verbName ? `${apiEndpoint}${id}:${verbName}` : `${apiEndpoint}${id}`;
+
+			http.get(`${url}`, (res) => {
 				let data = '';
 				res.on('data', (chunk) => data += chunk);
 				res.on('end', () => {
-					let fileUri = vscode.Uri.file(`${Folder}/${id}.${verbName}.moo`);
+					var filename = verbName ? `${id}.${verbName}.moo` : `${id}.moo`;
+					let fileUri = vscode.Uri.file(`${Folder}/${filename}`);
 					let encoder = new TextEncoder();
 					let dataUint8Array = encoder.encode(data);
 

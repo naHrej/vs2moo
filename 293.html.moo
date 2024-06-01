@@ -9,11 +9,18 @@ if (object == undef)
 endif
 "get the verb";
 attr = args[2][index + 1..$];
-if (attr == "" || !$object_utils:has_verb(object, attr))
+if(index == 0)
+  verbs = verbs(object);
+  output = {};
+  for verb in (verbs)
+    output = output + {tostr("@program ", object, ":", verb)} + verb_code(object, verb) + {""} + {"."};
+  endfor
+  return header + {output};
+endif
+if (!$object_utils:has_verb(object, attr))
   output = {"Invalid verb"};
   return header + output;
 endif
 return header + {tostr("@program ", object, ":", attr)} + verb_code(object, attr) + {""} + {"."};
 
 .
-
