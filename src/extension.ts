@@ -16,8 +16,8 @@ export function activate(context: vscode.ExtensionContext) {
 			let apiEndpoint = config.get('APIEndpoint');
 
 			// if id is a range ie 0-255 then get all verbs for each id and save them to individual files named id.moo
-			if (id.includes('-')) {
-				let [start, end] = id.split('-');
+			if (id.includes('..')) {
+				let [start, end] = id.split('..');
 			
 				for (let i = parseInt(start); i <= parseInt(end); i++) {
 					const url = `${apiEndpoint}${i}`;
@@ -41,9 +41,45 @@ export function activate(context: vscode.ExtensionContext) {
 					});
 					// rate limit the request to 1 per 100ms
 					await new Promise(resolve => setTimeout(resolve, 100));
-				}
+				} 
 				return;
-			}
+			} else if (id.includes('-')) {
+                let [start, end] = id.split('-');
+                let allData = '';
+
+                for (let i = parseInt(start); i <= parseInt(end); i++) {
+                    const url = `${apiEndpoint}${i}`;
+                    await new Promise((resolve, reject) => {
+                        http.get(`${url}`, (res) => {
+                            let data = '';
+                            res.on('data', (chunk) => data += chunk);
+                            res.on('end', () => {
+                                allData += data + '\n';
+                                resolve(null);
+                            });
+                        }).on('error', (err) => {
+                            console.error(`Request error: ${err.message}`);
+                            reject(err);
+                        });
+                    });
+                    // rate limit the request to 1 per 100ms
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+
+                let fileUri = vscode.Uri.file(`${Folder}/${start}-${end}.moo`);
+                let encoder = new TextEncoder();
+                let dataUint8Array = encoder.encode(allData);
+
+                // write all collected data to the file
+                vscode.workspace.fs.writeFile(fileUri, dataUint8Array).then(() => {
+                    // open the file
+                    vscode.workspace.openTextDocument(fileUri).then(doc => {
+                        vscode.window.showTextDocument(doc);
+                    });
+                });
+
+                return;
+            }
 
 			const url = verbName ? `${apiEndpoint}${id}:${verbName}` : `${apiEndpoint}${id}`;
 
